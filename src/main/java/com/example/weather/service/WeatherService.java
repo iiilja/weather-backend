@@ -32,23 +32,41 @@ public class WeatherService {
     }
 
     @Retryable(value = {RestClientException.class}, maxAttempts = 3, backoff = @Backoff(delay = 2000))
-    public WeatherApiResponse fetchWeatherData(City city) {
+    public WeatherApiResponse fetchWeatherData(double lat, double lon) {
         String url = "http://api.openweathermap.org/data/2.5/weather" +
-                "?lat=" + city.getCoord().getLat() +
-                "&lon=" + city.getCoord().getLon() +
+                "?lat=" + lat +
+                "&lon=" + lon +
                 "&units=metric" +
                 "&appid=" + apiKey;
-        logger.debug("Fetching weather data for city id {} from URL: {}", city.getId(), url);
+        logger.debug("Fetching weather data for city lat {}, lon {} from URL: {}", lat, lon, url);
         ResponseEntity<WeatherApiResponse> response = restTemplate.getForEntity(url, WeatherApiResponse.class);
         WeatherApiResponse weatherResponse = response.getBody();
-        logger.debug("Fetched weather data for city id {}: {}", city.getId(), weatherResponse);
+        logger.debug("Fetched weather data for city lat {}, lon {}: {}", lat, lon, weatherResponse);
         return weatherResponse;
+    }
+
+    public void updateWeather() {
+        var cities = weatherRepository.findAll();
+        for (Weather weather : cities) {
+            try {
+                WeatherApiResponse weatherResponse = fetchWeatherData(weather.getLat(), weather.getLon());
+                Double temp = weatherResponse.getMain().getTemp();
+                double lon = weatherResponse.getCoord().getLon();
+                double lat = weatherResponse.getCoord().getLat();
+                weather.setTemperature(temp);
+                weatherRepository.save(weather);
+                logger.info("Updated weather for city: {} with temperature: {}, lon: {}, lat: {}",
+                        weather.getCityName(), temp, lon, lat);
+            } catch (Exception e) {
+                logger.error("Error fetching data for city: {}", weather.getCityName(), e);
+            }
+        }
     }
 
     public void updateWeatherForCities(List<City> cities) {
         for (City city : cities) {
             try {
-                WeatherApiResponse weatherResponse = fetchWeatherData(city);
+                WeatherApiResponse weatherResponse = fetchWeatherData(city.getCoord().getLat(), city.getCoord().getLon());
                 Double temp = weatherResponse.getMain().getTemp();
                 double lon = weatherResponse.getCoord().getLon();
                 double lat = weatherResponse.getCoord().getLat();

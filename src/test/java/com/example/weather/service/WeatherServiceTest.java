@@ -53,7 +53,7 @@ class WeatherServiceTest {
         ResponseEntity<WeatherApiResponse> entity = ResponseEntity.ok(response);
         doReturn(entity).when(restTemplate).getForEntity(anyString(), eq(WeatherApiResponse.class));
 
-        WeatherApiResponse result = weatherService.fetchWeatherData(testCity);
+        WeatherApiResponse result = weatherService.fetchWeatherData(testCity.getCoord().getLat(), testCity.getCoord().getLon());
 
         // Validate that the response data is as expected.
         assert(result.getMain().getTemp() == 30.0);
