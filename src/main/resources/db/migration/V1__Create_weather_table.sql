@@ -1,0 +1,8 @@
+CREATE TABLE weather (
+    id BIGSERIAL PRIMARY KEY,
+    city_id INTEGER NOT NULL,
+    city_name VARCHAR(255) NOT NULL,
+    temperature DOUBLE PRECISION,
+    lon DOUBLE PRECISION,
+    lat DOUBLE PRECISION
+);
